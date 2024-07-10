@@ -3,6 +3,7 @@ import express,{NextFunction,Response,Request} from "express"
 import cors from "cors"
 export const app = express()
 import cookieParser from "cookie-parser";
+import { ErrorMiddleware } from "./middleware/error";
 
 // body parser
 
@@ -35,3 +36,5 @@ app.all("*",(req:Request,res:Response,next:NextFunction)=>{
     err.status=404;
     next(err);
 })
+
+app.use(ErrorMiddleware)

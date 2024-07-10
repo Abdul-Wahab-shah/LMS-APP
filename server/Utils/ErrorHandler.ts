@@ -9,4 +9,6 @@ constructor(message: any,statusCode: Number){
 }
 
 }
-module.exports=errorHandler;
+
+
+export default errorHandler;
