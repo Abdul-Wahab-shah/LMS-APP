@@ -8,7 +8,7 @@ import ejs from "ejs"
 import path from "path"
 import sendMail from "../utils/sendMail";
 import {IUser} from "../model/user_model"
-
+import { sendToken } from "../utils/jwt";
 
 // register user
 
@@ -19,7 +19,6 @@ interface IRegistrationBody{
     avatar?:string
 
 }
-
 export const registrationUser = catchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, email, password } = req.body;
@@ -62,12 +61,10 @@ export const registrationUser = catchAsyncError(async (req: Request, res: Respon
       return next(new ErrorHandler(error.message, 400));
     }
   });
-
 interface IActivationToken{
     token:string;
     activationCode:string;
 }
-
 export const createActivationToken=(user: any): IActivationToken=>{
     const activationCode=Math.floor(1000+Math.random()*9000).toString();
 
@@ -82,15 +79,11 @@ export const createActivationToken=(user: any): IActivationToken=>{
 
     return {token,activationCode }
 }
-
 interface IActivationRequest {
     activation_token: string;
     activation_code: string;
   }
-
-
 //   Activation user
-  
   export const activateUser = catchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { activation_token, activation_code } = req.body as IActivationRequest;
@@ -127,4 +120,38 @@ interface IActivationRequest {
       return next(new ErrorHandler(error.message, 400));
     }
   });
+
+// Login User
+
+interface ILoginRequest{
+  "email":string,
+  "password":string
+}
+
+export const loginUser = catchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password } = req.body as ILoginRequest;
   
+    if(email || password){
+      return next(new ErrorHandler("Please provide both email and password", 400));
+    }
+
+    const user = await userModel.findOne({ email }).select("+password");
+  
+    if (!user ||!(await user.comparePassword(password))) {
+      return next(new ErrorHandler("Invalid email or password", 401));
+    }
+    const isPasswordMatch= await user.comparePassword(password
+      );
+    if(!isPasswordMatch){
+      return next(new ErrorHandler("Invalid email or password", 401));
+    }
+    sendToken(user,200,res)
+
+  
+  } catch (error: any) {
+    return next(new ErrorHandler(error.message, 400));
+  }
+
+
+})
