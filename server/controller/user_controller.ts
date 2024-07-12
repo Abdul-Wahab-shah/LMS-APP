@@ -9,6 +9,7 @@ import path from "path"
 import sendMail from "../utils/sendMail";
 import {IUser} from "../model/user_model"
 import { sendToken } from "../utils/jwt";
+import { redis } from "../utils/redis";
 
 // register user
 
@@ -131,27 +132,56 @@ interface ILoginRequest{
 export const loginUser = catchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body as ILoginRequest;
-  
-    if(email || password){
+
+    // Check if either email or password is missing
+    if (!email || !password) {
       return next(new ErrorHandler("Please provide both email and password", 400));
     }
 
     const user = await userModel.findOne({ email }).select("+password");
-  
-    if (!user ||!(await user.comparePassword(password))) {
-      return next(new ErrorHandler("Invalid email or password", 401));
-    }
-    const isPasswordMatch= await user.comparePassword(password
-      );
-    if(!isPasswordMatch){
-      return next(new ErrorHandler("Invalid email or password", 401));
-    }
-    sendToken(user,200,res)
 
-  
+    if (!user) {
+      return next(new ErrorHandler("Invalid email or password", 401));
+    }
+
+    const isPasswordMatch = await user.comparePassword(password);
+    if (!isPasswordMatch) {
+      return next(new ErrorHandler("Invalid email or password", 401));
+    }
+
+    sendToken(user, 200, res);
+
   } catch (error: any) {
     return next(new ErrorHandler(error.message, 400));
   }
+});
 
+// logout user
+export const logoutUser = catchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+      console.log("Clearing cookies...");
+      res.cookie("access_token", "", { maxAge: 1 })
+      res.cookie("refresh_token", "", { maxAge: 1 })
+      if (!req.user) {
+          return next(new ErrorHandler("User not authenticated at logout controller", 400))
+      }
+      const userId = req.user?._id || "";
+      console.log('User:', req.user);
 
+      // redis.del(userId)
+
+      // res.status(200).json({
+      //     success: true,
+      //     message: "User Logout Successfully"
+      // })
+
+      await redis.del(userId);
+      console.log('User:', req.user);
+      res.status(200).json({
+          success: true,
+          message: "User Logout Successfully"
+      });
+  } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400))
+    }
 })
