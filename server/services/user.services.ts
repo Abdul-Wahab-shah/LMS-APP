@@ -1,12 +1,44 @@
-// import { Response } from "express";
-import userModel from "../model/user_model";
+import { Response } from "express";
+import userModel from "../model/user.model";
 
 // get user by id
-const getUserById=(async(_id:string) => {
+export const getUserById=(async(_id:string) => {
         const user= await userModel.findById(_id)
         if (!user) {
           throw new Error('User not found');
         }
 })
 
-export default getUserById;
+
+// get user by id
+// export const getUserById = async (id: string, res: Response) => {
+//   const userJson = await redis.get(id);
+
+//   if (userJson) {
+//     const user = JSON.parse(userJson as string);
+//     res.status(201).json({
+//       success: true,
+//       user,
+//     });
+//   }
+// };
+
+// Get All users
+export const getAllUsersService = async (res: Response) => {
+  const users = await userModel.find().sort({ createdAt: -1 });
+
+  res.status(201).json({
+    success: true,
+    users,
+  });
+};
+
+// update user role
+export const updateUserRoleService = async (res:Response,id: string,role:string) => {
+  const user = await userModel.findByIdAndUpdate(id, { role }, { new: true });
+
+  res.status(201).json({
+    success: true,
+    user,
+  });
+}

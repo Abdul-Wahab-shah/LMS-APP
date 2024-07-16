@@ -1,51 +1,65 @@
 require("dotenv").config();
-import express,{NextFunction,Response,Request} from "express"   
-import cors from "cors"
-export const app = express()
+import express, { NextFunction, Request, Response } from "express";
+export const app = express();
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ErrorMiddleware } from "./middleware/error";
-import userRouter from "./route/user_route"
-import { isAuthenticated } from "./middleware/auth";
-import { getUserInfo } from "./controller/user_controller";
+import userRouter from "./route/user.route";
+import courseRouter from "./route/course.route";
+import orderRouter from "./route/order.route";
+import notificationRouter from "./route/notification.route";
+import analyticsRouter from "./route/analytics.route";
+import layoutRouter from "./route/layout.route";
+import { rateLimit } from "express-rate-limit";
 
 // body parser
-
-app.use(express.json({limit:"50mb"}))
-
+app.use(express.json({ limit: "50mb" }));
 
 // cookie parser
 app.use(cookieParser());
 
-
-// cors => cross origin resourse sharing 
+// cors => cross origin resource sharing
 app.use(
-    cors({
-        origin:process.env.ORIGIN,
-       
-    })
-)
+  cors({
+    origin: ["http://localhost:3000"],
+    credentials: true,
+  })
+);
+
+// api requests limit
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
 
 // routes
+app.use(
+  "/api/v1",
+  userRouter,
+  orderRouter,
+  courseRouter,
+  notificationRouter,
+  analyticsRouter,
+  layoutRouter
+);
 
-app.use("/api/v1",userRouter)
-app.use(isAuthenticated); // Use the authentication middleware
-
-app.get('/user', getUserInfo);
-
-// testing Api
-app.get("/test",(req:Request,res:Response,next:NextFunction) =>{
-    res.status(200).json({
-        success:true,
-        message:"Api is working"
-
-    });
-} )
+// testing api
+app.get("/test", (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).json({
+    succcess: true,
+    message: "API is working",
+  });
+});
 
 // unknown route
-app.all("*",(req:Request,res:Response,next:NextFunction)=>{
-    const err=new Error(`Route ${req.originalUrl} not found`) as any;
-    err.status=404;
-    next(err);
-})
+app.all("*", (req: Request, res: Response, next: NextFunction) => {
+  const err = new Error(`Route ${req.originalUrl} not found`) as any;
+  err.statusCode = 404;
+  next(err);
+});
 
-app.use(ErrorMiddleware)
+// middleware calls
+app.use(limiter);
+app.use(ErrorMiddleware);
