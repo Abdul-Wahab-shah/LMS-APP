@@ -5,6 +5,8 @@ export const app = express()
 import cookieParser from "cookie-parser";
 import { ErrorMiddleware } from "./middleware/error";
 import userRouter from "./route/user_route"
+import { isAuthenticated } from "./middleware/auth";
+import { getUserInfo } from "./controller/user_controller";
 
 // body parser
 
@@ -26,7 +28,9 @@ app.use(
 // routes
 
 app.use("/api/v1",userRouter)
+app.use(isAuthenticated); // Use the authentication middleware
 
+app.get('/user', getUserInfo);
 
 // testing Api
 app.get("/test",(req:Request,res:Response,next:NextFunction) =>{

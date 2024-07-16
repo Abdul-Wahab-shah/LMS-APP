@@ -37,14 +37,17 @@ export const sendToken = async (user: IUser, statusCode: number, res: Response) 
   const refreshToken = user.SignRefreshToken();
 
   // Store user session in Redis
-  await redis.set(user.id, JSON.stringify(user));
+  // await redis.set(user._id, JSON.stringify(user));
+  const sessionData = { _id: user._id.toString() };
+await redis.set(sessionData._id, JSON.stringify(sessionData));
+
 
   // Set cookies in the response
   res.cookie("access_token", accessToken, accessTokenOptions);
   res.cookie("refresh_token", refreshToken, refreshTokenOptions);
   
-  console.log("Access Token Cookie Set:", accessToken);
-  console.log("Refresh Token Cookie Set:", refreshToken);
+  // console.log("Access Token Cookie Set:", accessToken);
+  // console.log("Refresh Token Cookie Set:", refreshToken);
 
   res.status(statusCode).json({
     success: true,
